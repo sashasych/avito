@@ -1,7 +1,7 @@
 # Тестовое задание в Avito на Unit Job
 ## Установка и запуск БД
 ```
-psql -U postgres;
+psql -U postgres
 CREATE DATABASE billing;
 GRANT ALL PRIVILEGES ON DATABASE billing to postgres;
 \c billing
