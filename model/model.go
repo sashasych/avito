@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type BalanceChange struct {
 	UserID int
 	Change float64
@@ -12,9 +14,17 @@ type TransferChange struct {
 }
 
 type GetBalance struct {
-	ID int
+	ID           int
+	CurrencyType string
 }
 
 type Balance struct {
-	Balance float64
+	Balance      float64
+	CurrencyType string
+}
+
+type CurrenciesValue struct {
+	Currencies   map[string]float64 `json:"rates"`
+	BaseCurrency *string            `json:"base"`
+	Date         time.Time          `json:"-"`
 }

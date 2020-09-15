@@ -6,6 +6,7 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/sashasych/avito/model"
+	"github.com/sashasych/avito/service"
 	"log"
 	"net/http"
 )
@@ -59,6 +60,7 @@ func StartServer() {
 		tx.Commit()
 	})
 
+	//TODO добавить вывод баланса в долларах(по умолчанию) возможно что-то с константами сделать
 	http.HandleFunc("/getBalance", func(w http.ResponseWriter, r *http.Request) {
 		getBalance := model.GetBalance{}
 		err = json.NewDecoder(r.Body).Decode(&getBalance)
@@ -68,7 +70,12 @@ func StartServer() {
 		fmt.Println(rows)
 		rows.Next()
 		err = rows.Scan(&balance.Balance)
-
+		balance.CurrencyType = "RUB"
+		if getBalance.CurrencyType != "RUB" {
+			// TODO вызов метода получения нового баланса делаем запрос
+			balance.Balance, err = service.FetchDataFromExchangeApi(getBalance.CurrencyType, balance.Balance)
+			balance.CurrencyType = getBalance.CurrencyType
+		}
 		if err != nil {
 			panic(err)
 		}
