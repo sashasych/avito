@@ -8,10 +8,12 @@ GRANT ALL PRIVILEGES ON DATABASE billing to postgres;
 CREATE TABLE user_balance(id SERIAL PRIMARY key, balance MONEY);
 ```
 ## Установка и запуск сервера
+```
 git clone https://github.com/sashasych/avito.git
 cd avito
 go build main.go
 ./main.exe
+```
 ## Тестовые запросы
 Для пополнения и снятия
 ```
