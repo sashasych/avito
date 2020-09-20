@@ -1,43 +1,43 @@
 package server
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	_ "github.com/lib/pq"
+	"github.com/sashasych/avito/db"
 	"github.com/sashasych/avito/model"
-	"github.com/sashasych/avito/service"
 	"log"
 	"net/http"
 )
 
 func StartServer() {
 
-	//TODO вынести код в дб
+	//TODO вынести код с подключением дб и запросы к дб в пакет дб
 	//TODO обработать ошибки
 	//TODO вынести все методы в service
-	connStr := "user=postgres password=123 dbname=billing sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
+
+	//TODO API методы возвращают читабельные ошибки и коды (ДОП)
+
+	//TODO Разобраться со скриптом sql
+	//TODO Валидация данных и обработка ошибок
+	//TODO Добавить Check для БД, чтобы не было отрицательного баланса
+	//TODO Исправить показание баланса в евро
+	//TODO Сделать отдельную таблицу под список операций (пагинация + сортировка по сумме и дате)
+	//TODO Отрефакторить код
+	
+	database, err := db.CreateConnection()
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
-	//
 
 	http.HandleFunc("/updateBalance", func(w http.ResponseWriter, r *http.Request) {
-		balanceChange := model.BalanceChange{}
-		err = json.NewDecoder(r.Body).Decode(&balanceChange)
-		fmt.Println(balanceChange)
-		rows, err := db.Query("SELECT * From user_balance WHERE id=$1", balanceChange.UserID)
-		if rows.Next() {
-			_, err = db.Exec("UPDATE user_balance SET balance=balance+$2::MONEY WHERE id=$1", balanceChange.UserID, balanceChange.Change)
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			_, err = db.Exec("INSERT INTO user_balance(balance) VALUES ($1)", balanceChange.Change)
-			if err != nil {
-				panic(err)
-			}
+		balanceChangeRequest := model.BalanceChangeRequest{}
+		err = json.NewDecoder(r.Body).Decode(&balanceChangeRequest)
+		fmt.Println(balanceChangeRequest)
+		err = database.UpdateBalance(balanceChangeRequest.UserID, balanceChangeRequest.Change)
+		if err != nil {
+			fmt.Errorf("%s", err.Error())
 		}
 	})
 
@@ -45,46 +45,36 @@ func StartServer() {
 		transferChange := model.TransferChange{}
 		err = json.NewDecoder(r.Body).Decode(&transferChange)
 		fmt.Println(transferChange)
-		tx, err := db.Begin()
-
-		tx.Exec("UPDATE user_balance SET balance=balance+$2::NUMERIC::MONEY WHERE id=$1", transferChange.ToUserID, transferChange.Change)
+		err = database.TransferMoney(transferChange.ToUserID, transferChange.FromUserID, transferChange.Change)
 		if err != nil {
-			log.Fatal(err)
-			tx.Rollback()
+			fmt.Errorf("%s", err.Error())
 		}
-		tx.Exec("UPDATE user_balance SET balance=balance-$2::NUMERIC::MONEY WHERE id=$1", transferChange.FromUserID, transferChange.Change)
-		if err != nil {
-			log.Fatal(err)
-			tx.Rollback()
-		}
-		tx.Commit()
 	})
 
-	//TODO добавить вывод баланса в долларах(по умолчанию) возможно что-то с константами сделать
 	http.HandleFunc("/getBalance", func(w http.ResponseWriter, r *http.Request) {
-		getBalance := model.GetBalance{}
-		err = json.NewDecoder(r.Body).Decode(&getBalance)
-		fmt.Println(getBalance)
-		balance := model.Balance{}
-		rows, err := db.Query("SELECT balance::DECIMAL From user_balance WHERE id=$1", getBalance.ID)
-		fmt.Println(rows)
-		rows.Next()
-		err = rows.Scan(&balance.Balance)
-		balance.CurrencyType = "RUB"
-		if getBalance.CurrencyType != "RUB" {
-			// TODO вызов метода получения нового баланса делаем запрос
-			balance.Balance, err = service.FetchDataFromExchangeApi(getBalance.CurrencyType, balance.Balance)
-			balance.CurrencyType = getBalance.CurrencyType
-		}
+		getBalanceRequest := model.GetBalanceRequest{}
+		err = json.NewDecoder(r.Body).Decode(&getBalanceRequest)
+		fmt.Println(getBalanceRequest)
+		getBalanceResponse := model.GetBalanceResponse{}
+		getBalanceResponse.CurrencyType = getBalanceRequest.CurrencyType
+		err, getBalanceResponse.Balance  = database.GetBalance(getBalanceRequest.ID, getBalanceRequest.CurrencyType)
 		if err != nil {
-			panic(err)
+			fmt.Errorf("%s", err.Error())
+		} else {
+			jsonResponse(w, "OK", getBalanceResponse)
 		}
-		jsonResponse(w, "OK", balance)
+	})
+
+	http.HandleFunc("/getHistory", func(w http.ResponseWriter, r *http.Request) {
+
 	})
 
 	fmt.Println("starting server at :8080")
 	http.ListenAndServe(":8080", nil)
+
+
 }
+
 
 func jsonResponse(rw http.ResponseWriter, message string, data interface{}) {
 	rw.Header().Set("Content-Type", "application/json")
