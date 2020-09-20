@@ -5,7 +5,7 @@ psql -U postgres
 CREATE DATABASE billing;
 GRANT ALL PRIVILEGES ON DATABASE billing to postgres;
 \c billing
-CREATE TABLE user_balance(id SERIAL PRIMARY key, balance MONEY);
+CREATE TABLE user_balance(id SERIAL PRIMARY key, balance MONEY CHECK (balance>=0::MONEY));
 CREATE TABLE transaction_history(id SERIAL PRIMARY KEY, UserId INTEGER REFERENCES user_balance (id), info TEXT, amount DECIMAL, date TIMESTAMPTZ);
 ```
 ## Установка и запуск сервера
