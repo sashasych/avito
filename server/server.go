@@ -12,17 +12,13 @@ import (
 
 func StartServer() {
 
-	//TODO вынести код с подключением дб и запросы к дб в пакет дб
-	//TODO обработать ошибки
-	//TODO вынести все методы в service
-
 	//TODO API методы возвращают читабельные ошибки и коды (ДОП)
-
-	//TODO Разобраться со скриптом sql
+	//TODO Разобраться со скриптом sql + скрипт bash под тестовый сценарий
 	//TODO Валидация данных и обработка ошибок
-	//TODO Добавить Check для БД, чтобы не было отрицательного баланса
-	//TODO Исправить показание баланса в евро
-	//TODO Сделать отдельную таблицу под список операций (пагинация + сортировка по сумме и дате)
+
+	//TODO Исправить показание баланса в евро(частный случай)
+	//TODO пагинация + сортировка по сумме и дате в истории операций
+	
 	//TODO Отрефакторить код
 	
 	database, err := db.CreateConnection()
@@ -66,7 +62,19 @@ func StartServer() {
 	})
 
 	http.HandleFunc("/getHistory", func(w http.ResponseWriter, r *http.Request) {
-
+		getHistoryRequest := model.HistoryRequest{}
+		err := json.NewDecoder(r.Body).Decode(&getHistoryRequest)
+		if err != nil {
+			fmt.Errorf("%s", err.Error())
+		}
+		fmt.Println(getHistoryRequest)
+		getHistoryResponse := model.HistoryResponse{}
+		err, getHistoryResponse.Transactions = database.GetHistory(getHistoryRequest.UserID)
+		if err != nil {
+			fmt.Errorf("%s", err.Error())
+		} else {
+			jsonResponse(w, "OK", getHistoryResponse)
+		}
 	})
 
 	fmt.Println("starting server at :8080")
@@ -74,7 +82,6 @@ func StartServer() {
 
 
 }
-
 
 func jsonResponse(rw http.ResponseWriter, message string, data interface{}) {
 	rw.Header().Set("Content-Type", "application/json")

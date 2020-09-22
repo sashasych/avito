@@ -30,15 +30,15 @@ type CurrenciesValue struct {
 }
 
 type HistoryRequest struct {
-	ID int
+	UserID int
 }
 
 type HistoryResponse struct {
-	Transactions []Transaction
+	Transactions []*Transaction
 }
 
 type Transaction struct {
-	info string
-	amount float64
-	date time.Time
+	Info string
+	Amount float64
+	Date time.Time
 }

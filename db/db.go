@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"github.com/sashasych/avito/model"
 	"github.com/sashasych/avito/service"
 )
 
@@ -73,4 +74,21 @@ func (db *Database) GetBalance(userId int, currencyType string) (err error, bala
 		balance, err = service.FetchDataFromExchangeApi(currencyType, balance)
 	}
 	return err, balance
+}
+
+func (db *Database) GetHistory(userId int) (err error, transactions []*model.Transaction) {
+	rows, err := db.connection.Query("SELECT info, amount, date From transaction_history WHERE userid=$1", userId)
+	if err != nil {
+		return err, nil
+	}
+	for rows.Next() {
+		r := new(model.Transaction)
+		err = rows.Scan(&r.Info, &r.Amount, &r.Date)
+		fmt.Println(r)
+		if err != nil {
+			return err, nil
+		}
+		transactions = append(transactions, r)
+	}
+	return err, transactions
 }
