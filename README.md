@@ -5,7 +5,7 @@ psql -U postgres
 CREATE DATABASE billing;
 GRANT ALL PRIVILEGES ON DATABASE billing to postgres;
 \c billing
-CREATE TABLE user_balance(id SERIAL PRIMARY key, balance MONEY);
+CREATE TABLE user_balance(id SERIAL PRIMARY key, balance MONEY CHECK (balance>=0::MONEY));
 CREATE TABLE transaction_history(id SERIAL PRIMARY KEY, UserId INTEGER REFERENCES user_balance (id), info TEXT, amount DECIMAL, date TIMESTAMPTZ);
 ```
 ## Установка и запуск сервера
@@ -20,11 +20,15 @@ go build main.go
 ```
 curl -d '{"UserID":1,"Change":50}' -H 'Content-Type: application/json' http://localhost:8080/updateBalance
 ```
-для получения баланса
+Для получения баланса
 ```
 curl -d '{"ID":1, "CurrencyType":"USD"}' -H 'Content-Type: application/json' http://localhost:8080/getBalance
 ```
-для перевода денег
+Для перевода денег
 ```
 curl -d '{"FromUserID":1,"ToUserID":2,"Change":333.33}' -H 'Content-Type: application/json' http://localhost:8080/transferMoney
+```
+Для получения истории изменения баланса
+```
+curl -d '{"UserID":1}' -H 'Content-Type: application/json' http://localhost:8080/getHistory
 ```
