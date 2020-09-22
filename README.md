@@ -29,3 +29,6 @@ curl -d '{"ID":1, "CurrencyType":"USD"}' -H 'Content-Type: application/json' htt
 curl -d '{"FromUserID":1,"ToUserID":2,"Change":333.33}' -H 'Content-Type: application/json' http://localhost:8080/transferMoney
 ```
 Для получения истории изменения баланса
+```
+curl -d '{"UserID":1}' -H 'Content-Type: application/json' http://localhost:8080/getHistory
+```
